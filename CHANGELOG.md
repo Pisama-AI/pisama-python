@@ -4,10 +4,14 @@ All notable changes to the `pisama` meta-package are documented here. The packag
 
 ## [Unreleased]
 
-- Add CodeQL, dependency review, and a full-package coverage regression gate.
-- Update pinned CI and trusted-publishing actions.
-
 ## [0.5.3] - 2026-07-23
+
+### Added
+
+- Add CodeQL, dependency review, and a full-package coverage regression gate.
+- Raise full-package test coverage from 23.46% to more than 60% with captured
+  Omnigent workflow tests covering ATIF loading, local detection, MCP, OTLP
+  collection, replay storage, CI checks, and terminal output.
 
 ### Changed
 
@@ -19,6 +23,14 @@ All notable changes to the `pisama` meta-package are documented here. The packag
   governance files.
 - Corrected the archived TRAIL benchmark figure and linked to its public
   evidence.
+- Update pinned CI and trusted-publishing actions.
+
+### Fixed
+
+- Preserve named OTLP error statuses when collecting Pisama's own exports.
+- Preserve native `error_message` fields when replaying JSONL traces.
+- Keep an explicitly selected replay directory isolated from unrelated user
+  stores and safely sort mixed timezone-aware and legacy naive timestamps.
 
 ## [0.5.2] - 2026-07-23
 

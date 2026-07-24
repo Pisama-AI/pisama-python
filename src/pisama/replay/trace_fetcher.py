@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -47,9 +47,12 @@ class TraceFetcher:
 
     def _discover_local_dirs(self, explicit_dir: Optional[Path]) -> list[Path]:
         """Find all local trace directories."""
-        dirs: list[Path] = []
         if explicit_dir and explicit_dir.exists():
-            dirs.append(explicit_dir)
+            # An explicit directory is an isolation boundary. Mixing it with
+            # implicit user-level stores makes CI, evaluation harnesses, and
+            # callers inspecting a specific export return unrelated traces.
+            return [explicit_dir]
+        dirs: list[Path] = []
         for candidate in [_DEFAULT_TRACES_DIR, _CLAUDE_TRACES_DIR]:
             if candidate.exists() and candidate not in dirs:
                 dirs.append(candidate)
@@ -122,7 +125,9 @@ class TraceFetcher:
 
         # Sort by most recent first (use first span start_time)
         unique.sort(
-            key=lambda t: t.spans[0].start_time if t.spans else datetime.min,
+            key=lambda t: _sortable_timestamp(t.spans[0].start_time)
+            if t.spans
+            else datetime.min.replace(tzinfo=timezone.utc),
             reverse=True,
         )
 
@@ -342,7 +347,9 @@ class TraceFetcher:
 
         # Sort by first span timestamp, descending
         traces.sort(
-            key=lambda t: t.spans[0].start_time if t.spans else datetime.min,
+            key=lambda t: _sortable_timestamp(t.spans[0].start_time)
+            if t.spans
+            else datetime.min.replace(tzinfo=timezone.utc),
             reverse=True,
         )
 
@@ -418,6 +425,13 @@ def _safe_json_loads(value: Any) -> Optional[dict[str, Any]]:
         return None
 
 
+def _sortable_timestamp(value: datetime) -> datetime:
+    """Normalize local trace timestamps for safe chronological sorting."""
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
 def _record_to_span(record: dict[str, Any]) -> Span:
     """Convert a JSONL record to a Span."""
     try:
@@ -460,5 +474,8 @@ def _record_to_span(record: dict[str, Any]) -> Span:
         attributes=record.get("attributes", {}),
         input_data=record.get("input_data"),
         output_data=record.get("output_data"),
-        error_message=record.get("error"),
+        # Native ``Span.to_dict()`` uses ``error_message`` while older local
+        # collectors used ``error``. Supporting both preserves failures when
+        # users replay current JSONL exports.
+        error_message=record.get("error_message") or record.get("error"),
     )

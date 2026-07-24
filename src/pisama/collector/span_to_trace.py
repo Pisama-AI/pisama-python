@@ -125,9 +125,12 @@ def _otel_status_to_pisama(otel_status: dict[str, Any] | None) -> SpanStatus:
     if not otel_status:
         return SpanStatus.OK
     code = otel_status.get("code", 0)
-    if code == 2:  # ERROR
+    # OTLP/JSON encoders may emit either protobuf enum numbers or canonical
+    # enum names. Pisama's own exporter emits the names, so accepting only
+    # integers made a Pisama export/collect round trip silently lose errors.
+    if code in (2, "2", "STATUS_CODE_ERROR"):
         return SpanStatus.ERROR
-    if code == 1:  # OK
+    if code in (1, "1", "STATUS_CODE_OK"):
         return SpanStatus.OK
     return SpanStatus.UNSET
 
