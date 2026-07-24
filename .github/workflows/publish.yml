@@ -1,5 +1,7 @@
 name: Publish to PyPI
 
+# v0.5.4 already points to a commit that predates artifact promotion.
+# Do not move or reuse it. The first release using this workflow must be v0.5.5 or newer.
 on:
   release:
     types: [published]
@@ -29,8 +31,52 @@ jobs:
           name: dist
           path: dist/
 
-  publish:
+  smoke:
     needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        artifact: [wheel, sdist]
+    steps:
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: dist
+          path: dist/
+      - name: Select exact ${{ matrix.artifact }} artifact
+        id: package
+        shell: bash
+        run: |
+          shopt -s nullglob
+          if [ "${{ matrix.artifact }}" = "wheel" ]; then
+            packages=(dist/*.whl)
+          else
+            packages=(dist/*.tar.gz)
+          fi
+          test "${#packages[@]}" -eq 1
+          echo "path=${packages[0]}" >> "$GITHUB_OUTPUT"
+      - name: Install exact ${{ matrix.artifact }} artifact
+        run: python -m pip install --quiet "${{ steps.package.outputs.path }}"
+      - name: Smoke test installed artifact
+        run: |
+          EXPECTED_VERSION="${GITHUB_REF_NAME#v}" python - <<'PY'
+          import os
+          from importlib.metadata import version
+
+          import pisama
+
+          assert version("pisama") == os.environ["EXPECTED_VERSION"]
+          assert pisama.__version__ == os.environ["EXPECTED_VERSION"]
+          print(f"pisama {pisama.__version__} artifact smoke test passed")
+          PY
+          pisama --help >/dev/null
+
+  publish:
+    needs: [build, smoke]
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
