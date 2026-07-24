@@ -33,7 +33,7 @@ classifiers = [
     "Topic :: System :: Monitoring",
 ]
 dependencies = [
-    "pisama-core>=1.8.0,<2",
+    "pisama-core>=1.8.1,<2",
     "click>=8.0",
     "rich>=13.0",
     "httpx>=0.27",

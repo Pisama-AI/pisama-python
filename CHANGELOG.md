@@ -7,8 +7,9 @@ All notable changes to the `pisama` meta-package are documented here. The packag
 ### Changed
 
 - Published the MIT package source in its own public repository.
-- Required `pisama-core` 1.8.0, the first release containing the Omnigent
-  ingestion API used by the CLI.
+- Required `pisama-core` 1.8.1, which contains the Omnigent ingestion API and
+  parses standard `Z` timestamps consistently across every supported Python
+  version.
 - Added standalone CI, type checking, clean-wheel verification, and community
   governance files.
 - Corrected the archived TRAIL benchmark figure and linked to its public
