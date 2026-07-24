@@ -1,0 +1,71 @@
+{
+  "base_url": "http://localhost:6799",
+  "agent": "pisama_fixture_agent",
+  "harness": "claude-sdk",
+  "model": "claude-opus-4-8",
+  "parent_session_id": "conv_6bc2a8ba3ba743e3af63d3741c155cba",
+  "child_session_ids": [
+    "conv_e29d5b7e80744c0ea5cc9c46b73d47e8",
+    "conv_f3d05a521ff94a40a71037b9d19f49b8"
+  ],
+  "child_sessions_api": {
+    "object": "list",
+    "data": [
+      {
+        "id": "conv_f3d05a521ff94a40a71037b9d19f49b8",
+        "object": "child_session",
+        "parent_session_id": "conv_6bc2a8ba3ba743e3af63d3741c155cba",
+        "title": "researcher:finland_capital",
+        "tool": "researcher",
+        "session_name": "finland_capital",
+        "kind": "sub_agent",
+        "created_at": 1783703170,
+        "updated_at": 1783703175,
+        "agent_id": "ag_fcc2e1f1e19a4b8ab37dc1dad30fe9ff",
+        "agent_name": null,
+        "current_task_id": null,
+        "current_task_status": null,
+        "busy": false,
+        "labels": {
+          "omnigent.last_task_error_code": "",
+          "omnigent.last_task_error_message": ""
+        },
+        "last_task_error": null,
+        "last_message_preview": "Helsinki.",
+        "pending_elicitations_count": 0
+      },
+      {
+        "id": "conv_e29d5b7e80744c0ea5cc9c46b73d47e8",
+        "object": "child_session",
+        "parent_session_id": "conv_6bc2a8ba3ba743e3af63d3741c155cba",
+        "title": "researcher:math_calculation",
+        "tool": "researcher",
+        "session_name": "math_calculation",
+        "kind": "sub_agent",
+        "created_at": 1783703161,
+        "updated_at": 1783703166,
+        "agent_id": "ag_fcc2e1f1e19a4b8ab37dc1dad30fe9ff",
+        "agent_name": null,
+        "current_task_id": null,
+        "current_task_status": null,
+        "busy": false,
+        "labels": {
+          "omnigent.last_task_error_code": "",
+          "omnigent.last_task_error_message": ""
+        },
+        "last_task_error": null,
+        "last_message_preview": "17 * 23 = 391",
+        "pending_elicitations_count": 0
+      }
+    ],
+    "first_id": "conv_f3d05a521ff94a40a71037b9d19f49b8",
+    "last_id": "conv_e29d5b7e80744c0ea5cc9c46b73d47e8",
+    "has_more": false
+  },
+  "prompts": [
+    "Use your researcher tool to find out what 17 * 23 is, then report the answer.",
+    "Now ask the researcher what the capital of Finland is, and report that too."
+  ],
+  "omnigent_version": "0.4.0",
+  "capture_note": "Real session captured 2026-07-10 against omnigent 0.4.0 local server+host; agent: claude-sdk harness with one agent-type sub-tool (researcher); 2 turns, 2 child sessions."
+}
