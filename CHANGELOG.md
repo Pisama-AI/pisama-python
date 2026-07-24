@@ -2,6 +2,11 @@
 
 All notable changes to the `pisama` meta-package are documented here. The package follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+- Add CodeQL, dependency review, and a full-package coverage regression gate.
+- Update pinned CI and trusted-publishing actions.
+
 ## [0.5.3] - 2026-07-23
 
 ### Changed
