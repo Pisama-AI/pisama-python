@@ -214,7 +214,10 @@ LOOP_TRACE = {
             "input_data": "Summarize doc-42",
             "output_data": "Error: API rate limit exceeded",
         }
-        for i in range(4)
+        # Five repetitions cross the full-analysis reporting threshold. Four
+        # is intentionally only a low-severity warning in pisama-core and is
+        # filtered from the default all-detector report.
+        for i in range(5)
     ],
 }
 
