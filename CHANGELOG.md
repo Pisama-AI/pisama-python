@@ -4,7 +4,7 @@ All notable changes to the `pisama` meta-package are documented here. The packag
 
 ## [Unreleased]
 
-## [0.5.3] - 2026-07-23
+## [0.5.4] - 2026-07-23
 
 ### Added
 
@@ -12,6 +12,21 @@ All notable changes to the `pisama` meta-package are documented here. The packag
 - Raise full-package test coverage from 23.46% to more than 60% with captured
   Omnigent workflow tests covering ATIF loading, local detection, MCP, OTLP
   collection, replay storage, CI checks, and terminal output.
+
+### Changed
+
+- Require `pisama-core` 1.8.2 so installs include the latest security and
+  ingestion-contract hardening.
+- Update pinned CI and trusted-publishing actions.
+
+### Fixed
+
+- Preserve named OTLP error statuses when collecting Pisama's own exports.
+- Preserve native `error_message` fields when replaying JSONL traces.
+- Keep an explicitly selected replay directory isolated from unrelated user
+  stores and safely sort mixed timezone-aware and legacy naive timestamps.
+
+## [0.5.3] - 2026-07-23
 
 ### Changed
 
@@ -23,14 +38,6 @@ All notable changes to the `pisama` meta-package are documented here. The packag
   governance files.
 - Corrected the archived TRAIL benchmark figure and linked to its public
   evidence.
-- Update pinned CI and trusted-publishing actions.
-
-### Fixed
-
-- Preserve named OTLP error statuses when collecting Pisama's own exports.
-- Preserve native `error_message` fields when replaying JSONL traces.
-- Keep an explicitly selected replay directory isolated from unrelated user
-  stores and safely sort mixed timezone-aware and legacy naive timestamps.
 
 ## [0.5.2] - 2026-07-23
 
