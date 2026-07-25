@@ -4,6 +4,13 @@ All notable changes to the `pisama` meta-package are documented here. The packag
 
 ## [Unreleased]
 
+## [0.5.5] - 2026-07-25
+
+### Changed
+
+- Publish releases through an isolated, tag-verified trusted-publishing
+  workflow with complete package tests before the PyPI job can start.
+
 ## [0.5.4] - 2026-07-23
 
 ### Added
