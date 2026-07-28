@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
-Pisama ships 32 core heuristic detectors plus framework-specific detectors for n8n, LangGraph, Dify, and OpenClaw. They run locally with zero LLM cost on the heuristic tier. An archived run on the [TRAIL benchmark](https://arxiv.org/abs/2505.08638) reports **59.9% joint accuracy** (span and category), compared with 11.9% for the best general-purpose LLM judge tested. The public confusion counts reproduce the reported macro-F1 and micro-F1. See the [benchmark evidence and its reproducibility boundary](https://github.com/Pisama-AI/pisama-detectors/tree/main/benchmarks).
+Pisama ships 32 core heuristic detectors. They apply across frameworks including n8n, LangGraph, Dify and OpenClaw, with per-platform gating (for example `coordination` runs only on multi-agent platforms). They run locally with zero LLM cost on the heuristic tier. An archived, in-distribution run on the [TRAIL benchmark](https://arxiv.org/abs/2505.08638) reports 59.9% joint accuracy (span and category). It is not a held-out result: 144 of the 148 traces appeared in calibration material, and the published archive does not contain the prediction-level data needed to recompute joint accuracy. The public confusion counts do reproduce the reported macro-F1 (0.7535) and micro-F1 (0.7463). See the [benchmark evidence and its reproducibility boundary](https://github.com/Pisama-AI/pisama-detectors/tree/main/benchmarks).
 
 ## Install
 
@@ -51,7 +51,7 @@ Works in Cursor, Claude Desktop, and Windsurf. No API key is needed:
 
 ## Detectors
 
-32 core detectors plus framework-specific detectors for n8n, LangGraph, Dify, and OpenClaw. A representative selection:
+32 core detectors, gated per platform (n8n, LangGraph, Dify, OpenClaw and others). A representative selection:
 
 | Detector | What It Catches |
 |----------|----------------|
@@ -71,20 +71,26 @@ Works in Cursor, Claude Desktop, and Windsurf. No API key is needed:
 | `withholding` | Suppressed findings, hidden errors |
 | `convergence` | Metric plateau, regression, thrashing |
 | `overflow` | Context window exhaustion |
-| `delegation` | Delegation quality and task handoff failures |
-| `grounding` | Claims not supported by source documents |
-| `retrieval_quality` | Poor retrieval relevance or coverage |
-| `compaction_quality` | Information loss during context compaction |
+| `propagation` | Silent error propagation across steps |
+| `citation` | Fabricated citations and source misattribution |
+| `routing` | Inputs misrouted to the wrong specialist agent |
+| `mcp_protocol` | MCP tool-communication failures |
 
 ## Benchmark Results
 
-**TRAIL** (trace-level failure detection, 148 traces):
+**TRAIL** (trace-level failure detection, 148 traces). Archived April 2026 run, **in-distribution and not held out**: 144 of 148 traces appeared in calibration material.
 
 | Method | Joint Accuracy |
 |--------|---------------|
-| GPT-5.4 | 11.9% |
-| Gemini 3.1 Pro | 6.8% |
-| **Pisama archived run** | **59.9%** |
+| Pisama archived run | 59.9% |
+
+Reproducible from the archive: macro-F1 0.7535, micro-F1 0.7463 (`benchmarks/verify_report.py`).
+Joint accuracy is **not** recomputable from the public archive, which lacks prediction-level
+data. LLM-judge baselines are omitted here because
+[`trail_llm_baselines.json`](https://github.com/Pisama-AI/pisama-detectors/blob/main/benchmarks/trail_llm_baselines.json)
+carries confusion counts but `"result": null` for every model, so no comparable joint-accuracy
+figure exists in the artifact. See the
+[reproducibility boundary](https://github.com/Pisama-AI/pisama-detectors/tree/main/benchmarks).
 
 **Who&When** (ICML 2025, multi-agent attribution, 58 hand-crafted cases):
 
