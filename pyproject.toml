@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pisama"
-version = "0.5.5"
+version = "0.5.6"
 description = "Multi-agent failure detection for production AI systems"
 readme = "README.md"
 license = "MIT"
