@@ -4,6 +4,29 @@ All notable changes to the `pisama` meta-package are documented here. The packag
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-07-29
+
+### Added
+
+- `pisama.auto` -- consolidated in-package original of the standalone
+  `pisama-auto` distribution (zero-code auto-instrumentation for the
+  Anthropic/OpenAI SDKs, tracing to either the Pisama platform or a
+  self-hosted OTLP collector). New `auto` extra:
+  `pip install "pisama[auto]"`.
+- `pisama.agents` -- consolidated in-package original of the standalone
+  `pisama-agent-sdk` distribution (real-time hooks, tools, and a
+  `pisama-openhands-monitor` console script for Claude Agent SDK / Harbor
+  integrations). New `agents` and `telemetry` extras:
+  `pip install "pisama[agents]"`.
+- `pisama.agents.__version__`, aliased to `pisama.__version__` since this
+  code no longer releases independently.
+
+Both submodules keep publishing as standalone distributions
+(`pisama-auto`, `pisama-agent-sdk`) for this release; those packages become
+thin shims re-exporting this module in a later release. A bare
+`pip install pisama` pulls in no new required dependencies -- `pisama.auto`
+and `pisama.agents` stay behind their respective extras.
+
 ## [0.5.7] - 2026-07-29
 
 ### Changed

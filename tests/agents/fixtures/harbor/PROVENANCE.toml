@@ -1,0 +1,21 @@
+format_version = 1
+source_repository = "https://github.com/harbor-framework/harbor"
+source_root = "tests/golden/terminus_2"
+source_license = "Apache-2.0"
+source_revision = "00c19fe2a9c1b9b7ed07efc270412007ac4cb3da"
+imported_on = "2026-07-23"
+
+[[fixtures]]
+path = "hello-world-context-summarization-linear-history.trajectory.cont-1.json"
+schema_version = "ATIF-v1.7"
+sha256 = "054dfbe7e9835830dca2d7c58dc01a8c7129362538b49df4f50468a875d69082"
+
+[[fixtures]]
+path = "hello-world-context-summarization-linear-history.trajectory.json"
+schema_version = "ATIF-v1.7"
+sha256 = "06b56ab49c627ae3410a0dcb8650a41bb1b30f113d601d10060e590a5018c2bb"
+
+[[fixtures]]
+path = "hello-world-context-summarization.trajectory.summarization-1-summary.json"
+schema_version = "ATIF-v1.7"
+sha256 = "4b2fa414287428143d74673fef51f2e6f32b22ea9118714b8208cd15c3c34c27"
