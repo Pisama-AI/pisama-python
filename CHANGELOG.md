@@ -4,6 +4,30 @@ All notable changes to the `pisama` meta-package are documented here. The packag
 
 ## [Unreleased]
 
+## [0.5.7] - 2026-07-29
+
+### Changed
+
+- Disclose the precision boundary of the archived TRAIL run beside the F1
+  numbers in the README. The archive scored only annotated errors, so no false
+  positive was recordable (`fp = 0` in 14 of 14 categories, `prediction_count`
+  equals `mapped_annotations` at 813). Precision is 1.000 by construction rather
+  than by measurement, F1 reduces to `2R / (1 + R)`, and the informative figure
+  is micro-recall 0.5953. The macro-F1 0.7535 and micro-F1 0.7463 values remain
+  arithmetically reproducible; they simply carry no precision information. This
+  caveat already shipped in the sibling `pisama-detectors` README and in
+  `benchmarks/evidence.json`, and is now carried by the package people install.
+
+## [0.5.6] - 2026-07-28
+
+### Fixed
+
+- Pin `mcp>=1.0.0,<2` so `pip install "pisama[mcp]"` stops resolving mcp 2.0.0,
+  which removed the 1.x decorator API that `pisama mcp-server` uses.
+- Correct the published README: drop four detectors that do not exist
+  (`delegation`, `grounding`, `retrieval_quality`, `compaction_quality`), drop a
+  false framework-specific-detectors claim, and correct the TRAIL table.
+
 ## [0.5.5] - 2026-07-25
 
 ### Changed

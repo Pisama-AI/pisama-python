@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
-Pisama ships 32 core heuristic detectors. They apply across frameworks including n8n, LangGraph, Dify and OpenClaw, with per-platform gating (for example `coordination` runs only on multi-agent platforms). They run locally with zero LLM cost on the heuristic tier. An archived, in-distribution run on the [TRAIL benchmark](https://arxiv.org/abs/2505.08638) reports 59.9% joint accuracy (span and category). It is not a held-out result: 144 of the 148 traces appeared in calibration material, and the published archive does not contain the prediction-level data needed to recompute joint accuracy. The public confusion counts do reproduce the reported macro-F1 (0.7535) and micro-F1 (0.7463). See the [benchmark evidence and its reproducibility boundary](https://github.com/Pisama-AI/pisama-detectors/tree/main/benchmarks).
+Pisama ships 32 core heuristic detectors. They apply across frameworks including n8n, LangGraph, Dify and OpenClaw, with per-platform gating (for example `coordination` runs only on multi-agent platforms). They run locally with zero LLM cost on the heuristic tier. An archived, in-distribution run on the [TRAIL benchmark](https://arxiv.org/abs/2505.08638) reports 59.9% joint accuracy (span and category). It is not a held-out result: 144 of the 148 traces appeared in calibration material, and the published archive does not contain the prediction-level data needed to recompute joint accuracy. The public confusion counts do reproduce the reported macro-F1 (0.7535) and micro-F1 (0.7463), but those F1 values carry no precision information: the archive recorded no false positives, so they reduce to recall (micro-recall 0.5953). See the [benchmark evidence and its reproducibility boundary](https://github.com/Pisama-AI/pisama-detectors/tree/main/benchmarks).
 
 ## Install
 
@@ -85,6 +85,16 @@ Works in Cursor, Claude Desktop, and Windsurf. No API key is needed:
 | Pisama archived run | 59.9% |
 
 Reproducible from the archive: macro-F1 0.7535, micro-F1 0.7463 (`benchmarks/verify_report.py`).
+
+**Read those F1 figures as a recall measurement.** The archive scored only annotated errors,
+so no false positive was recordable: `fp = 0` in 14 of 14 categories, and `prediction_count`
+equals `mapped_annotations` (813). Precision is therefore 1.000 by construction rather than by
+measurement, and F1 collapses to `2R / (1 + R)`, carrying no information beyond recall. The
+informative figure is micro-recall 0.5953: the heuristic tier alone missed roughly 40% of the
+labelled failures. The same boundary is recorded in
+[`benchmarks/evidence.json`](https://github.com/Pisama-AI/pisama-detectors/blob/main/benchmarks/evidence.json)
+and in the [`pisama-detectors` README](https://github.com/Pisama-AI/pisama-detectors#archived-trail-platform-benchmark).
+
 Joint accuracy is **not** recomputable from the public archive, which lacks prediction-level
 data. LLM-judge baselines are omitted here because
 [`trail_llm_baselines.json`](https://github.com/Pisama-AI/pisama-detectors/blob/main/benchmarks/trail_llm_baselines.json)
