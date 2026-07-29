@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pisama"
-version = "0.5.7"
+version = "0.6.0"
 description = "Multi-agent failure detection for production AI systems"
 readme = "README.md"
 license = "MIT"
@@ -46,8 +46,33 @@ dependencies = [
 # server.py:138 with AttributeError: 'Server' object has no attribute
 # 'list_tools'. Lift this only once the server is ported to the 2.x API.
 mcp = ["mcp>=1.0.0,<2"]
-auto = ["pisama-auto>=0.1.0", "opentelemetry-api>=1.20.0", "opentelemetry-sdk>=1.20.0"]
+# pisama.auto is now original code inside this package (see src/pisama/auto/),
+# not an import of the standalone pisama-auto distribution -- pisama-auto stays
+# published separately and, in a later release, becomes a thin shim re-exporting
+# this module. wrapt is the function-wrapping library pisama.auto's patches
+# submodule needs to monkeypatch the anthropic/openai clients.
+auto = [
+    "opentelemetry-api>=1.20.0",
+    "opentelemetry-sdk>=1.20.0",
+    "opentelemetry-exporter-otlp-proto-http>=1.20.0",
+    "wrapt>=1.15.0",
+]
 langgraph = ["langgraph>=0.2.0", "langchain-core>=0.3.0"]
+# pisama.agents mirrors pisama-agent-sdk's own optional-extra split: httpx is
+# only needed for the HTTP-backed calls (analyze_atif, PisamaEvaluator), and
+# posthog only for opt-in SDK-side telemetry in DetectionBridge. Neither is
+# imported at module load time (see pisama/agents/atif.py, evaluator.py,
+# bridge.py) so `import pisama` and `import pisama.agents` both work without
+# either installed; only the specific calls that need them raise ImportError
+# with a `pip install pisama[agents]` hint until the extra is added. httpx is
+# already a hard dependency of the base `pisama` install (see `dependencies`
+# above) for unrelated reasons, so this extra is declared for documentation
+# and for behavioral parity with pisama-agent-sdk's `evaluator` extra, not
+# because it changes what a bare `pip install pisama` pulls in today.
+agents = ["httpx>=0.24"]
+# Pass-through of pisama-agent-sdk's own `telemetry` extra (opt-in PostHog
+# telemetry in pisama.agents.bridge.DetectionBridge).
+telemetry = ["posthog>=3.0"]
 dev = [
     "build>=1.2",
     "mypy>=1.10",
@@ -56,10 +81,20 @@ dev = [
     "pytest-cov>=5.0",
     "ruff>=0.4",
     "twine>=5.0",
+    # Test-only: tests/test_auto_sdk_instrumentation.py patches these SDK
+    # clients directly. Carried over from pisama-auto's own `dev` extra;
+    # not a runtime dependency of the `auto` extra itself, since users
+    # bring their own anthropic/openai client.
+    "anthropic>=0.40",
+    "openai>=1.50",
 ]
 
 [project.scripts]
 pisama = "pisama.cli.main:main"
+# From pisama-agent-sdk: batch analysis of a completed OpenHands /
+# Harbor-on-OpenHands session directory. Needs the `agents` extra installed
+# to reach the network call inside analyze_atif(); `--help` works bare.
+pisama-openhands-monitor = "pisama.agents.cli.openhands_monitor:main"
 
 [project.urls]
 Homepage = "https://pisama.ai"
