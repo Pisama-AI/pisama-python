@@ -14,7 +14,7 @@ try:
 
     __version__ = _pkg_version("pisama")
 except PackageNotFoundError:  # running from a source checkout without an install
-    __version__ = "0.6.1"
+    __version__ = "0.6.2"
 
 from pisama._analyze import AnalyzeResult, Issue, analyze, async_analyze
 from pisama._http import PisamaAuthError

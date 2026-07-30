@@ -4,6 +4,12 @@ All notable changes to the `pisama` meta-package are documented here. The packag
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-07-30
+
+### Fixed
+
+- Remove the legacy License classifier now that PEP 639 license_expression is set (setuptools>=78 forbids both together).
+
 ## [0.6.0] - 2026-07-29
 
 ### Added
