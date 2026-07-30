@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
-Pisama ships 32 core heuristic detectors. They apply across frameworks including n8n, LangGraph, Dify and OpenClaw, with per-platform gating (for example `coordination` runs only on multi-agent platforms). They run locally with zero LLM cost on the heuristic tier. An archived, in-distribution run on the [TRAIL benchmark](https://arxiv.org/abs/2505.08638) reports 59.9% joint accuracy (span and category). It is not a held-out result: 144 of the 148 traces appeared in calibration material, and the published archive does not contain the prediction-level data needed to recompute joint accuracy. The public confusion counts do reproduce the reported macro-F1 (0.7535) and micro-F1 (0.7463), but those F1 values carry no precision information: the archive recorded no false positives, so they reduce to recall (micro-recall 0.5953). See the [benchmark evidence and its reproducibility boundary](https://github.com/Pisama-AI/pisama-detectors/tree/main/benchmarks).
+Pisama ships heuristic detectors that apply across frameworks including n8n, LangGraph, Dify and OpenClaw, with per-platform gating (for example `coordination` runs only on multi-agent platforms). They run locally with zero LLM cost on the heuristic tier.
 
 ## Install
 
@@ -33,7 +33,7 @@ pisama analyze trace.json          # Analyze a trace
 pisama watch python my_agent.py    # Watch a live agent (pip install "pisama[auto]")
 pisama replay <trace-id>           # Re-run detection on stored traces
 pisama smoke-test --last 50        # Batch test recent traces
-pisama detectors                   # List all 32 core detectors
+pisama detectors                   # List all core detectors
 pisama mcp-server                  # Start MCP server (pip install pisama[mcp])
 ```
 
@@ -116,7 +116,7 @@ is the recommended path for new projects, one package instead of two.
 
 ## Detectors
 
-32 core detectors, gated per platform (n8n, LangGraph, Dify, OpenClaw and others). A representative selection:
+Core detectors, gated per platform (n8n, LangGraph, Dify, OpenClaw and others). A representative selection:
 
 | Detector | What It Catches |
 |----------|----------------|
@@ -140,39 +140,6 @@ is the recommended path for new projects, one package instead of two.
 | `citation` | Fabricated citations and source misattribution |
 | `routing` | Inputs misrouted to the wrong specialist agent |
 | `mcp_protocol` | MCP tool-communication failures |
-
-## Benchmark Results
-
-**TRAIL** (trace-level failure detection, 148 traces). Archived April 2026 run, **in-distribution and not held out**: 144 of 148 traces appeared in calibration material.
-
-| Method | Joint Accuracy |
-|--------|---------------|
-| Pisama archived run | 59.9% |
-
-Reproducible from the archive: macro-F1 0.7535, micro-F1 0.7463 (`benchmarks/verify_report.py`).
-
-**Read those F1 figures as a recall measurement.** The archive scored only annotated errors,
-so no false positive was recordable: `fp = 0` in 14 of 14 categories, and `prediction_count`
-equals `mapped_annotations` (813). Precision is therefore 1.000 by construction rather than by
-measurement, and F1 collapses to `2R / (1 + R)`, carrying no information beyond recall. The
-informative figure is micro-recall 0.5953: the heuristic tier alone missed roughly 40% of the
-labelled failures. The same boundary is recorded in
-[`benchmarks/evidence.json`](https://github.com/Pisama-AI/pisama-detectors/blob/main/benchmarks/evidence.json)
-and in the [`pisama-detectors` README](https://github.com/Pisama-AI/pisama-detectors#archived-trail-platform-benchmark).
-
-Joint accuracy is **not** recomputable from the public archive, which lacks prediction-level
-data. LLM-judge baselines are omitted here because
-[`trail_llm_baselines.json`](https://github.com/Pisama-AI/pisama-detectors/blob/main/benchmarks/trail_llm_baselines.json)
-carries confusion counts but `"result": null` for every model, so no comparable joint-accuracy
-figure exists in the artifact. See the
-[reproducibility boundary](https://github.com/Pisama-AI/pisama-detectors/tree/main/benchmarks).
-
-**Who&When** (ICML 2025, multi-agent attribution, 58 hand-crafted cases):
-
-| Method | Agent Accuracy | Step Accuracy |
-|--------|---------------|---------------|
-| GPT-5.4 Mini | 60.3% | 22.4% |
-| **Pisama + Sonnet 4** | **60.3%** | **24.1%** |
 
 ## Links
 
