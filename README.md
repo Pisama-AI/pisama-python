@@ -30,7 +30,7 @@ for issue in result.issues:
 
 ```bash
 pisama analyze trace.json          # Analyze a trace
-pisama watch python my_agent.py    # Watch a live agent (pip install pisama[auto])
+pisama watch python my_agent.py    # Watch a live agent (pip install "pisama[auto]")
 pisama replay <trace-id>           # Re-run detection on stored traces
 pisama smoke-test --last 50        # Batch test recent traces
 pisama detectors                   # List all 32 core detectors
@@ -48,6 +48,71 @@ Works in Cursor, Claude Desktop, and Windsurf. No API key is needed:
   }
 }
 ```
+
+## Optional extras
+
+The base `pisama` install has zero-cost heuristic detection covered. Two extras
+add opt-in functionality on top.
+
+### Auto-instrumentation: `pisama[auto]`
+
+Zero-code tracing for LLM calls. `init()` patches supported clients (Anthropic,
+OpenAI) so every call after it emits an OTEL trace Pisama can analyze, no
+manual instrumentation needed.
+
+```bash
+pip install "pisama[auto]"
+```
+
+```python
+import pisama.auto
+
+pisama.auto.init(api_key="ps_...")
+
+# All subsequent LLM calls are automatically traced
+import anthropic
+client = anthropic.Anthropic()
+response = client.messages.create(...)  # traced automatically
+```
+
+This used to require the standalone `pisama-auto` package. That package still
+works and stays fully supported for existing installs; `pisama[auto]` is the
+same code, folded into the base package so there is one less dependency to
+track. New projects should install it this way.
+
+### Agent hooks and tools: `pisama[agents]`
+
+Real-time hooks, tools, and self-check utilities for agent runtimes (built for
+the Claude Agent SDK), wired to Pisama's detection infrastructure for
+in-loop failure prevention rather than after-the-fact analysis.
+
+```bash
+pip install "pisama[agents]"
+```
+
+```python
+from pisama.agents import pre_tool_use_hook, post_tool_use_hook
+
+agent.hooks.pre_tool_use = pre_tool_use_hook
+agent.hooks.post_tool_use = post_tool_use_hook
+```
+
+Active self-check is available the same way:
+
+```python
+from pisama.agents import check
+
+result = await check(
+    output="The server is healthy based on the metrics.",
+    context={"query": "Is auth-service down?", "sources": [...]},
+)
+if not result["passed"]:
+    ...  # revise output based on result["issues"]
+```
+
+This used to require the standalone `pisama-agent-sdk` package. That package
+still works and stays fully supported for existing installs; `pisama[agents]`
+is the recommended path for new projects, one package instead of two.
 
 ## Detectors
 
