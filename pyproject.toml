@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pisama"
-version = "0.6.2"
+version = "0.6.3"
 description = "Multi-agent failure detection for production AI systems"
 readme = "README.md"
 license = "MIT"
@@ -97,7 +97,7 @@ pisama-openhands-monitor = "pisama.agents.cli.openhands_monitor:main"
 
 [project.urls]
 Homepage = "https://pisama.ai"
-Documentation = "https://docs.pisama.ai"
+Documentation = "https://github.com/Pisama-AI/pisama-python#readme"
 Repository = "https://github.com/Pisama-AI/pisama-python"
 Issues = "https://github.com/Pisama-AI/pisama-python/issues"
 Changelog = "https://github.com/Pisama-AI/pisama-python/blob/main/CHANGELOG.md"
