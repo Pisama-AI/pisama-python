@@ -14,6 +14,96 @@ Pisama ships heuristic detectors that apply across frameworks including n8n, Lan
 pip install pisama
 ```
 
+## Hosted first diagnosis
+
+The basic Usage example below runs locally. A founder-issued Pisama Cloud
+API key is for the hosted service, not a requirement for offline `analyze()`.
+If you arrived here after redeeming an invitation, use this section first.
+
+1. Save the one-time API key in your secret manager. Invitation redemption does
+   not create dashboard access. Never paste the key into an issue, shared trace,
+   source file, or chat.
+2. Export one representative run as OpenTelemetry JSON (`resourceSpans`) and
+   remove credentials and data you are not authorized to upload. Hosted ingestion
+   stores the run and counts toward your agreed usage allowance.
+3. Save the following as `hosted_first_diagnosis.py` and run
+   `python3 hosted_first_diagnosis.py`. It uses only Python's standard library,
+   prompts for the key without echoing it, and never prints the bearer token.
+   It sends your selected file to Pisama Cloud; it is not an offline example.
+
+```python
+import getpass
+import json
+from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
+
+BASE = "https://api.pisama.ai/api/v1"
+
+
+def post(path, payload, token=None):
+    headers = {"Content-Type": "application/json"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    request = Request(
+        BASE + path,
+        data=json.dumps(payload).encode("utf-8"),
+        headers=headers,
+        method="POST",
+    )
+    try:
+        with urlopen(request, timeout=120) as response:
+            return json.load(response)
+    except HTTPError as error:
+        # Do not dump request headers or response bodies containing private data.
+        raise SystemExit(f"{path}: HTTP {error.code}; stop and check access/format.")
+    except URLError:
+        raise SystemExit(f"{path}: network failure; do not blindly retry ingestion.")
+
+
+trace_path = Path(input("Path to your redacted OTLP JSON file: ").strip())
+trace = json.loads(trace_path.read_text(encoding="utf-8"))
+if not isinstance(trace, dict) or not isinstance(trace.get("resourceSpans"), list):
+    raise SystemExit("Expected an OTLP JSON object containing resourceSpans.")
+
+key = getpass.getpass("One-time Pisama Cloud API key: ").strip()
+auth = post("/auth/token", {"api_key": key, "scope": "full"})
+del key
+token = auth.get("access_token")
+if not isinstance(token, str) or not token:
+    raise SystemExit("No bearer token returned; stop and contact Pisama.")
+
+ingest = post("/traces/ingest", trace, token)
+print("Ingestion:", {name: ingest.get(name) for name in ("accepted", "rejected", "traces")})
+if not ingest.get("accepted") or ingest.get("rejected"):
+    raise SystemExit("Ingestion was empty or partial; inspect the export before continuing.")
+
+result = post("/diagnose/why-failed", {
+    "content": json.dumps(trace), "format": "otel", "include_fixes": False,
+}, token)
+del token
+print("Failure signals:", result.get("failure_count"))
+for finding in result.get("all_detections", []):
+    print(json.dumps({name: finding.get(name) for name in (
+        "category", "mistake_agent", "affected_spans", "evidence", "suggested_fix",
+    )}, indent=2))
+```
+
+Ingestion accepts work asynchronously. The diagnosis request above analyzes the
+submitted content; it does not prove that background analysis of the stored run
+has completed. Review the reported agent, spans, evidence and next action against
+your run. Zero signals is not proof of success, and a suggested fix is not proof
+that the task will work after a change. `include_fixes=False` avoids requesting
+optional generated fixes; it does not promise that every hosted detector is free
+of model calls or usage charges. Hosted scope, retention and pricing are defined
+in your founder-led agreement, not this package's MIT license.
+
+For 401, obtain a fresh token using an active key. For 403, check your invitation,
+scope and entitlement with Pisama. For 429, stop and check quota or rate limits.
+Do not repeatedly upload the same run to work around an error. Contact
+[team@pisama.ai](mailto:team@pisama.ai) if the flow cannot produce an inspectable
+finding. Do not send the key or an unredacted trace by email.
+
 ## Usage
 
 ```python
@@ -143,7 +233,8 @@ Core detectors, gated per platform (n8n, LangGraph, Dify, OpenClaw and others). 
 
 ## Links
 
-- [Documentation](https://docs.pisama.ai)
+- [Offline usage](#usage)
+- [Hosted first diagnosis](#hosted-first-diagnosis)
 - [GitHub](https://github.com/Pisama-AI/pisama-python)
 - [Platform](https://pisama.ai)
 
