@@ -4,7 +4,16 @@ All notable changes to the `pisama` meta-package are documented here. The packag
 
 ## [Unreleased]
 
-## [0.6.3] - 2026-09-08
+## [0.6.4] - 2026-09-08
+
+### Fixed
+
+- Update the pinned PyPI publishing action to support core metadata 2.5 while
+  retaining metadata validation, artifact smoke tests and trusted publishing.
+- Include the documentation fixes prepared for 0.6.3. That release failed
+  publisher validation before upload; its original Git tag is preserved.
+
+## [0.6.3] - 2026-09-08 (not published to PyPI)
 
 ### Fixed
 
