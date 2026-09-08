@@ -4,6 +4,17 @@ All notable changes to the `pisama` meta-package are documented here. The packag
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-09-08
+
+### Fixed
+
+- Replace the retired documentation hostname in package metadata with the
+  canonical public README.
+- Explain hosted invitation onboarding separately from offline SDK usage,
+  including token exchange, OTLP ingestion and diagnosis boundaries.
+- Keep SDK instrumentation tests compatible with both older Anthropic clients
+  and the 1.4 argument shape. Runtime instrumentation behavior is unchanged.
+
 ## [0.6.2] - 2026-07-30
 
 ### Fixed
