@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import json
 import os
 import threading
@@ -111,6 +112,13 @@ def test_real_openai_and_anthropic_clients_emit_semantic_spans(sdk_server, captu
     base_url, requests = sdk_server
     _patched.clear()
 
+    # Anthropic 1.4 removed temperature from Messages.create. Exercise the
+    # installed SDK's supported call shape without dropping older-SDK coverage.
+    supports_temperature = "temperature" in inspect.signature(
+        anthropic.resources.Messages.create
+    ).parameters
+    anthropic_options = {"temperature": 0} if supports_temperature else {}
+
     assert set(patch_all()) == {"openai", "anthropic"}
     assert patch("openai")
     assert patch("unknown-sdk") is False
@@ -127,8 +135,8 @@ def test_real_openai_and_anthropic_clients_emit_semantic_spans(sdk_server, captu
         model="claude-sonnet-4-6",
         messages=[{"role": "user", "content": "Capital of France?"}],
         max_tokens=8,
-        temperature=0,
         system="Answer with one city.",
+        **anthropic_options,
     )
 
     assert openai_response.choices[0].message.content == "Paris"
@@ -146,6 +154,13 @@ def test_real_openai_and_anthropic_clients_emit_semantic_spans(sdk_server, captu
     assert openai_attrs["gen_ai.response.finish_reason"] == "stop"
     assert anthropic_attrs["gen_ai.usage.total_tokens"] == 10
     assert anthropic_attrs["gen_ai.request.has_system"] is True
+    assert openai_attrs["gen_ai.request.temperature"] == 0
+    if supports_temperature:
+        assert anthropic_attrs["gen_ai.request.temperature"] == 0
+        assert requests[1][1]["temperature"] == 0
+    else:
+        assert "gen_ai.request.temperature" not in anthropic_attrs
+        assert "temperature" not in requests[1][1]
 
 
 def test_anthropic_stream_wrapper_ends_span_on_real_file_iteration(tmp_path, captured_spans):
