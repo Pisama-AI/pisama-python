@@ -135,7 +135,8 @@ success. Coverage metadata does not turn heuristic confidence into calibration.
 `passed` remains a severity-threshold gate, not complete validation; explicit
 detector errors fail even with `--fail-on never`. Unknown coverage and abstention
 are not detector errors but are never counted as checked-clean files. Replay
-comparisons do not label disappeared findings fixed without explicit pass evidence.
+comparisons do not label disappeared findings fixed: current assessment metadata
+lacks comparable contract/input provenance, even when a later check passes.
 
 ```bash
 pisama analyze trace.json          # Analyze a trace

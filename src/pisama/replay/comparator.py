@@ -68,15 +68,10 @@ class ComparisonResult:
             b_sev = b_map.get(det, 0)
 
             if a_sev > 0 and b_sev == 0:
-                checked_pass = any(
-                    item.get("detector_name") == det
-                    and item.get("assessment") == "contract_satisfied"
-                    for item in b.detector_assessments
-                )
-                if checked_pass:
-                    result.fixed.append(det)
-                else:
-                    result.unassessed.append(det)
+                # Current assessments lack contract/input identity. A pass on
+                # a different request cannot establish that the prior failure
+                # was fixed, even if the detector name matches.
+                result.unassessed.append(det)
             elif a_sev > b_sev and b_sev > 0:
                 # Severity decreased
                 result.improved.append(det)

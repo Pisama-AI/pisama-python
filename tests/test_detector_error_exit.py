@@ -72,3 +72,39 @@ def test_replay_disappearance_without_coverage_not_fixed():
     assert comparison.fixed == []
     assert comparison.unassessed == ["synthetic"]
     assert comparison.assessments_b == after.detector_assessments
+
+
+def test_different_contract_pass_is_not_proof_of_prior_fix():
+    from pisama._analyze import AnalyzeResult, Issue
+    from pisama.replay.comparator import ComparisonResult
+
+    before = AnalyzeResult(
+        [Issue("communication", "Expected OK, got NO", 55, 0.9, [], None)],
+        "literal-run",
+        1,
+        1,
+        [
+            {
+                "detector_name": "communication",
+                "assessment": "contract_violated",
+                "checked_contracts": 1,
+            }
+        ],
+    )
+    after = AnalyzeResult(
+        [],
+        "different-json-run",
+        1,
+        1,
+        [
+            {
+                "detector_name": "communication",
+                "assessment": "contract_satisfied",
+                "checked_contracts": 1,
+            }
+        ],
+    )
+    result = ComparisonResult.compare(before, after)
+    assert result.fixed == []
+    assert not result.has_improvements
+    assert result.unassessed == ["communication"]
