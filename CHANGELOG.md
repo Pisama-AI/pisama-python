@@ -4,6 +4,25 @@ All notable changes to the `pisama` meta-package are documented here. The packag
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-10
+
+### Changed
+
+- `check --json` uses schema 3: per-file detector assessments and coverage
+  completeness are included. `files_clean` requires explicit assessed coverage;
+  use `files_no_findings` for the old absence-of-findings count. `passed` means
+  the severity gate passed with no detector errors, not complete task validation.
+- Explicit detector errors cause nonzero exits in analyze, check (including
+  `--fail-on never`), replay, smoke and watch. Unknown coverage/abstention alone
+  does not fail the severity gate. Consumers must update schema-2 parsers.
+- `AnalyzeResult.detector_assessments` is additive. Legacy core 1.10.3 outcomes
+  without assessment metadata are unknown, never inferred checked passes.
+- Replay comparisons retain assessments and no longer infer a fix from a
+  disappearing finding without comparable contract/input provenance.
+- Terminal summaries distinguish findings from coverage. This release does not
+  itself ship the pending core communication correction or establish calibrated
+  confidence, representative accuracy, or successful customer outcomes.
+
 ## [0.6.5] - 2026-09-10
 
 ### Fixed
