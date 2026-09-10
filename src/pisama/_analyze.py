@@ -60,12 +60,24 @@ class AnalyzeResult:
         return any(item.get("assessment") == "error" for item in self.detector_assessments)
 
     @property
-    def coverage_complete(self) -> bool:
+    def assessment_reporting_complete(self) -> bool:
+        """Each executed detector has one identified report, not complete trace coverage."""
+        names = [item.get("detector_name") for item in self.detector_assessments]
         return (
             self.detectors_run > 0
             and len(self.detector_assessments) == self.detectors_run
+            and all(isinstance(name, str) and bool(name) for name in names)
+            and len(set(names)) == self.detectors_run
             and all(
-                item.get("assessment") in {"contract_satisfied", "contract_violated", "finding"}
+                item.get("assessment")
+                in {
+                    "contract_satisfied",
+                    "contract_violated",
+                    "finding",
+                    "unknown",
+                    "abstained",
+                    "error",
+                }
                 for item in self.detector_assessments
             )
         )

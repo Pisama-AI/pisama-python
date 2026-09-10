@@ -131,7 +131,13 @@ provide no assessment are marked `unknown`. Terminal output separates explicit
 contract passes, abstentions, errors and unspecified coverage. Detector execution
 counts are not counts of validated requirements. No findings is not proof of task
 success. Coverage metadata does not turn heuristic confidence into calibration.
-`check --json` schema 3 includes per-file assessments and coverage completeness.
+`check --json` schema 3 includes per-file assessments and
+`assessment_reporting_complete`: one identified report per executed detector.
+That flag includes explicitly unknown/abstained reports and does not describe
+trace coverage. Duplicate/missing detector identities make reporting incomplete.
+`trace_coverage` is currently `unassessed`; `files_clean` remains zero because
+core does not provide whole-trace/span/contract coverage accounting. Even a
+detector reporting a satisfied contract may have skipped other requests.
 `passed` remains a severity-threshold gate, not complete validation; explicit
 detector errors fail even with `--fail-on never`. Unknown coverage and abstention
 are not detector errors but are never counted as checked-clean files. Replay

@@ -75,11 +75,19 @@ def display_analysis_result(result: AnalyzeResult) -> None:
         0, result.detectors_run - len(result.detector_assessments)
     )
     console.print(
-        "Coverage: "
-        f"{counts.get('contract_satisfied', 0)} explicit contract passes; "
+        "Coverage: selected detector reports only; "
+        f"{counts.get('contract_satisfied', 0)} detectors report contract passes; "
         f"{counts.get('abstained', 0)} abstained; "
         f"{counts.get('error', 0)} errors; {unknown} unspecified."
     )
+    console.print(
+        "Whole-trace/span coverage is unassessed; partial contract checks are not full coverage."
+    )
+    if not result.assessment_reporting_complete:
+        console.print(
+            "Assessment reporting incomplete: "
+            "detector identities/counts are missing or inconsistent."
+        )
 
     if not result.issues:
         return
