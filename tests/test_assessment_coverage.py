@@ -7,6 +7,7 @@ import sys
 from dataclasses import asdict
 from pathlib import Path
 
+import pytest
 from pisama_core.detection.orchestrator import AnalysisResult
 from pisama_core.detection.result import DetectionResult
 from pisama_core.traces.enums import Platform
@@ -32,6 +33,43 @@ def test_explicit_metadata_and_legacy_unknown_preserved():
         "unknown",
     ]
     assert "private input" not in json.dumps(result)
+
+
+@pytest.mark.parametrize("assessment", ["contract_satisfied", "abstained"])
+def test_findings_cannot_be_classified_as_pass_or_abstention(assessment):
+    result = DetectionResult("synthetic", detected=True, metadata={"assessment": assessment})
+    converted = _convert_assessments(
+        AnalysisResult(trace_id="synthetic", platform=Platform.GENERIC, detection_results=[result])
+    )
+    assert converted[0]["assessment"] == "finding"
+
+
+@pytest.mark.parametrize(
+    "checked", [{"marker": "SYNTHETIC_PRIVATE"}, "SYNTHETIC_PRIVATE", True, -1]
+)
+def test_metadata_values_are_typed_and_allowlisted(checked):
+    result = DetectionResult(
+        "synthetic",
+        metadata={
+            "assessment": "abstained",
+            "checked_contracts": checked,
+            "confidence_basis": "SYNTHETIC_PRIVATE",
+        },
+    )
+    converted = _convert_assessments(
+        AnalysisResult(trace_id="synthetic", platform=Platform.GENERIC, detection_results=[result])
+    )
+    assert "checked_contracts" not in converted[0]
+    assert "confidence_basis" not in converted[0]
+    assert "SYNTHETIC_PRIVATE" not in json.dumps(converted)
+
+
+def test_undetected_violation_is_unknown():
+    result = DetectionResult("synthetic", metadata={"assessment": "contract_violated"})
+    converted = _convert_assessments(
+        AnalysisResult(trace_id="synthetic", platform=Platform.GENERIC, detection_results=[result])
+    )
+    assert converted[0]["assessment"] == "unknown"
 
 
 def test_real_core_results_have_transparent_coverage(tmp_path):

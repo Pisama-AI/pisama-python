@@ -168,18 +168,37 @@ def _convert_assessments(analysis: Any) -> list[dict[str, Any]]:
     """Preserve explicit coverage without treating legacy silence as success."""
     assessments = []
     for result in analysis.detection_results:
-        metadata = result.metadata or {}
+        metadata = result.metadata if isinstance(result.metadata, dict) else {}
         assessment = metadata.get("assessment")
         if "error" in metadata:
             assessment = "error"
-        elif assessment not in {"abstained", "contract_satisfied", "contract_violated"}:
+        elif not isinstance(assessment, str) or assessment not in {
+            "abstained",
+            "contract_satisfied",
+            "contract_violated",
+        }:
             assessment = "finding" if result.detected else "unknown"
+        elif result.detected and assessment != "contract_violated":
+            assessment = "finding"
+        elif not result.detected and assessment == "contract_violated":
+            assessment = "unknown"
+        checked = metadata.get("checked_contracts")
+        if assessment == "contract_satisfied" and (type(checked) is not int or checked < 1):
+            assessment = "unknown"
+        elif (
+            assessment == "abstained"
+            and checked is not None
+            and (type(checked) is not int or checked != 0)
+        ):
+            assessment = "unknown"
         item = {"detector_name": result.detector_name, "assessment": assessment}
         # Expose coverage provenance, not arbitrary metadata/error strings that
         # could contain captured input or credentials.
-        for key in ("checked_contracts", "confidence_basis"):
-            if key in metadata:
-                item[key] = metadata[key]
+        if type(checked) is int and checked >= 0:
+            item["checked_contracts"] = checked
+        basis = metadata.get("confidence_basis")
+        if isinstance(basis, str) and basis == "uncalibrated contract heuristic":
+            item["confidence_basis"] = basis
         assessments.append(item)
     return assessments
 
