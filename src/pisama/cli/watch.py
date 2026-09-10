@@ -133,14 +133,20 @@ def watch(command: tuple[str, ...], min_severity: int) -> None:
     traces = collector.get_traces()
     collector.stop()
 
+    detection_failed = False
     if traces:
         console.print(f"\n[dim]Running detection on {len(traces)} trace(s)...[/dim]")
         for trace in traces:
             try:
                 result = asyncio.run(async_analyze(trace))
+                detection_failed = detection_failed or result.has_detector_errors
+                from pisama.output.terminal import display_analysis_result
+
+                display_analysis_result(result)
                 for issue in result.issues:
                     display.add_issue(issue)
             except Exception as exc:
+                detection_failed = True
                 console.print(
                     f"[yellow]Warning:[/yellow] Detection failed for "
                     f"trace {trace.trace_id[:12]}: {exc}"
@@ -152,6 +158,6 @@ def watch(command: tuple[str, ...], min_severity: int) -> None:
     # Exit with code from subprocess (or 1 if critical issues)
     exit_code = proc.returncode if proc.returncode else 0
     critical = [i for i in display._issues if i.severity >= 60]
-    if critical and exit_code == 0:
+    if (critical or detection_failed) and exit_code == 0:
         exit_code = 1
     sys.exit(exit_code)

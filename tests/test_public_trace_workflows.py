@@ -177,7 +177,7 @@ def test_cli_check_and_detector_inventory_cover_the_ci_user_journey(
     )
     assert check.exit_code == 0, check.output
     payload = json.loads(check.output)
-    assert payload["schema_version"] == 2
+    assert payload["schema_version"] == 3
     assert payload["summary"]["files_total"] == 1
     assert payload["summary"]["files_analyzed"] == 1
     assert payload["summary"]["passed"] is True
@@ -207,8 +207,9 @@ async def test_batch_smoke_comparison_and_terminal_views_use_real_results(
     short_result = await async_analyze(short_trace)
 
     comparison = ComparisonResult.compare(full_result, short_result)
-    assert comparison.has_improvements
-    assert {"context", "communication"}.intersection(comparison.fixed)
+    # Removing most of a trace is not evidence that its failures were fixed.
+    assert not comparison.has_improvements
+    assert {"context", "communication"}.intersection(comparison.unassessed)
     reverse = ComparisonResult.compare(short_result, full_result)
     assert reverse.has_regressions
 

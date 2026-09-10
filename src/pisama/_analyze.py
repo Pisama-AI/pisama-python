@@ -56,6 +56,21 @@ class AnalyzeResult:
     detector_assessments: list[dict[str, Any]] = field(default_factory=list)
 
     @property
+    def has_detector_errors(self) -> bool:
+        return any(item.get("assessment") == "error" for item in self.detector_assessments)
+
+    @property
+    def coverage_complete(self) -> bool:
+        return (
+            self.detectors_run > 0
+            and len(self.detector_assessments) == self.detectors_run
+            and all(
+                item.get("assessment") in {"contract_satisfied", "contract_violated", "finding"}
+                for item in self.detector_assessments
+            )
+        )
+
+    @property
     def has_issues(self) -> bool:
         """Whether any issues were detected."""
         return len(self.issues) > 0

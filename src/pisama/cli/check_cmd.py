@@ -26,7 +26,7 @@ console = Console(stderr=True)
 
 #: Version of the --json payload shape. Bump when the structure changes so
 #: CI consumers can pin against it.
-JSON_SCHEMA_VERSION = 2
+JSON_SCHEMA_VERSION = 3
 
 SKIP_DIRS = {".git", ".venv", "venv", "node_modules", "__pycache__", ".next", "dist", "build"}
 TRACE_SUFFIXES = {".json", ".jsonl"}
@@ -50,6 +50,8 @@ class _CheckReport:
     results: list[dict[str, object]] = field(default_factory=list)
     files_analyzed: int = 0
     files_clean: int = 0
+    files_no_findings: int = 0
+    files_incomplete: int = 0
     files_with_issues: int = 0
     files_failed: int = 0
     analysis_errors: int = 0
@@ -101,23 +103,36 @@ class _CheckReport:
     def record_result(self, path: Path, result: AnalyzeResult) -> None:
         """Record one successful analysis, including a clean result."""
         triggered = [issue for issue in result.issues if issue.severity >= self.severity_threshold]
-        failed_threshold = bool(triggered)
+        failed_threshold = bool(triggered) or result.has_detector_errors
         self.files_analyzed += 1
         self.issues_total += len(result.issues)
         self.issues_at_or_above_threshold += len(triggered)
         self.files_with_issues += int(result.has_issues)
-        self.files_clean += int(not result.has_issues)
+        self.files_clean += int(not result.has_issues and result.coverage_complete)
+        self.files_no_findings += int(not result.has_issues)
+        self.files_incomplete += int(not result.coverage_complete)
+        self.analysis_errors += int(result.has_detector_errors)
         self.files_failed += int(failed_threshold)
         self.failed = self.failed or failed_threshold
         self.results.append(
             {
                 "file": str(path),
-                "status": "issues" if result.has_issues else "clean",
+                "status": (
+                    "detector_error"
+                    if result.has_detector_errors
+                    else "issues"
+                    if result.has_issues
+                    else "clean"
+                    if result.coverage_complete
+                    else "unassessed"
+                ),
                 "failed": failed_threshold,
                 "trace_id": result.trace_id,
                 "detectors_run": result.detectors_run,
                 "execution_time_ms": result.execution_time_ms,
                 "issues": [asdict(issue) for issue in result.issues],
+                "detector_assessments": result.detector_assessments,
+                "coverage_complete": result.coverage_complete,
                 "error": None,
             }
         )
@@ -128,6 +143,8 @@ class _CheckReport:
             "files_total": self.files_total,
             "files_analyzed": self.files_analyzed,
             "files_clean": self.files_clean,
+            "files_no_findings": self.files_no_findings,
+            "files_incomplete": self.files_incomplete,
             "files_with_issues": self.files_with_issues,
             "files_failed": self.files_failed,
             "analysis_errors": self.analysis_errors,
@@ -138,6 +155,7 @@ class _CheckReport:
             "fail_on": self.fail_on,
             "severity_threshold": self.severity_threshold,
             "passed": not self.failed,
+            "pass_basis": "severity threshold and no detector errors, not complete task validation",
         }
         return {
             "schema_version": JSON_SCHEMA_VERSION,
@@ -416,10 +434,15 @@ def _render_file_result(
     """Render one human-readable result when JSON or quiet mode is not active."""
     if quiet or output_json:
         return
+    if result.has_detector_errors:
+        console.print(f"[red]Incomplete[/red] {trace_path}: detector error")
     if result.has_issues:
         _print_file_report(trace_path, result, threshold)
     else:
-        console.print(f"[green]OK[/green] {trace_path.name}: clean")
+        console.print(
+            f"{trace_path.name}: no findings; "
+            f"coverage {'complete' if result.coverage_complete else 'incomplete/unspecified'}"
+        )
 
 
 def _print_file_report(trace_path: Path, result: AnalyzeResult, threshold: int) -> None:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 from pisama._analyze import AnalyzeResult
 
@@ -24,6 +25,9 @@ class ComparisonResult:
     improved: list[str] = field(default_factory=list)
     regressed: list[str] = field(default_factory=list)
     unchanged: list[str] = field(default_factory=list)
+    unassessed: list[str] = field(default_factory=list)
+    assessments_a: list[dict[str, Any]] = field(default_factory=list)
+    assessments_b: list[dict[str, Any]] = field(default_factory=list)
 
     @property
     def has_regressions(self) -> bool:
@@ -55,6 +59,8 @@ class ComparisonResult:
         result = cls(
             trace_a_id=a.trace_id,
             trace_b_id=b.trace_id,
+            assessments_a=a.detector_assessments,
+            assessments_b=b.detector_assessments,
         )
 
         for det in all_detectors:
@@ -62,8 +68,15 @@ class ComparisonResult:
             b_sev = b_map.get(det, 0)
 
             if a_sev > 0 and b_sev == 0:
-                # Was detected, now clear
-                result.fixed.append(det)
+                checked_pass = any(
+                    item.get("detector_name") == det
+                    and item.get("assessment") == "contract_satisfied"
+                    for item in b.detector_assessments
+                )
+                if checked_pass:
+                    result.fixed.append(det)
+                else:
+                    result.unassessed.append(det)
             elif a_sev > b_sev and b_sev > 0:
                 # Severity decreased
                 result.improved.append(det)

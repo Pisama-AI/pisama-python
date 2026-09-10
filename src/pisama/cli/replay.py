@@ -100,7 +100,7 @@ async def _replay_async(
 
             display_analysis_result(result_a)
 
-        if result_a.critical_issues:
+        if result_a.critical_issues or result_a.has_detector_errors:
             sys.exit(1)
         return
 
@@ -138,6 +138,11 @@ async def _replay_async(
             regressed=comparison.regressed,
             unchanged=comparison.unchanged,
         )
+        if comparison.unassessed:
+            console.print(
+                "Disappeared findings without checked-pass evidence: "
+                + ", ".join(comparison.unassessed)
+            )
 
-    if comparison.has_regressions:
+    if comparison.has_regressions or result_a.has_detector_errors or result_b.has_detector_errors:
         sys.exit(1)
