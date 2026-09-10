@@ -4,6 +4,17 @@ All notable changes to the `pisama` meta-package are documented here. The packag
 
 ## [Unreleased]
 
+## [0.6.5] - 2026-09-10
+
+### Fixed
+
+- Reject unsupported OTLP exports, empty traces and ambiguous span objects in
+  local analysis instead of reporting a misleading clean result.
+- Reject mixed JSONL trace envelopes and additional rows instead of silently
+  discarding evidence. Native spans and supported ATIF inputs remain supported.
+- This input-validation release does not change detector calibration or resolve
+  false positives in the separately versioned `pisama-core` dependency.
+
 ## [0.6.4] - 2026-09-08
 
 ### Fixed
