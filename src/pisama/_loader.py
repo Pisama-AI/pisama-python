@@ -92,9 +92,37 @@ def _load_dict(data: dict[str, Any]) -> Trace:
         )
     if not isinstance(data.get("spans"), list):
         raise ValueError("Expected an ATIF trajectory or a native trace with a spans list.")
-    if not all(isinstance(span, dict) for span in data["spans"]):
-        raise ValueError("Native trace spans must be objects.")
+    for span in data["spans"]:
+        _validate_native_span(span)
     return Trace.from_dict(data)
+
+
+def _validate_native_span(data: Any) -> None:
+    # IDs and all other individual fields are optional in native spans, but
+    # unrelated dictionaries must not silently become default/blank spans.
+    native_fields = {
+        "span_id",
+        "parent_id",
+        "trace_id",
+        "name",
+        "kind",
+        "platform",
+        "platform_metadata",
+        "start_time",
+        "end_time",
+        "status",
+        "error_message",
+        "attributes",
+        "events",
+        "input_data",
+        "output_data",
+    }
+    if (
+        not isinstance(data, dict)
+        or not native_fields.intersection(data)
+        or {"resourceSpans", "spans", "steps"}.intersection(data)
+    ):
+        raise ValueError("Expected a native span object, not an empty object or trace/OTLP export.")
 
 
 def _load_jsonl(text: str) -> Trace:
@@ -104,18 +132,21 @@ def _load_jsonl(text: str) -> Trace:
     if not lines:
         raise ValueError("JSONL file is empty")
 
-    # If the first line parses as a full trace (has 'trace_id' + 'spans'),
-    # treat the file as a single-line trace dump.
-    first = json.loads(lines[0])
-    if "trace_id" in first and "spans" in first:
-        return _load_dict(first)
+    rows = [json.loads(line) for line in lines]
+    # A trace envelope is supported only as the sole row. Never discard
+    # subsequent evidence or silently flatten envelopes into blank spans.
+    if any(isinstance(row, dict) and "spans" in row for row in rows):
+        if len(rows) != 1:
+            raise ValueError(
+                "A JSONL trace envelope must be the only row; multiple rows cannot be merged."
+            )
+        return _load_dict(rows[0])
 
     # Otherwise, treat each line as a span dict and wrap them.
     from pisama_core.traces.models import Span
 
-    rows = [json.loads(line) for line in lines]
-    if not all(isinstance(row, dict) and row and "resourceSpans" not in row for row in rows):
-        raise ValueError("JSONL must contain nonempty native span objects, not OTLP exports.")
+    for row in rows:
+        _validate_native_span(row)
     spans = [Span.from_dict(row) for row in rows]
     trace = Trace()
     for span in spans:
