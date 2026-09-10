@@ -188,11 +188,13 @@ async def async_analyze(
         trace_id=trace.trace_id,
         detectors_run=analysis.total_detectors_run,
         execution_time_ms=elapsed_ms,
-        detector_assessments=_convert_assessments(analysis),
+        detector_assessments=_convert_assessments(analysis, len(trace.spans)),
     )
 
 
-def _convert_assessments(analysis: Any) -> list[dict[str, Any]]:
+def _convert_assessments(
+    analysis: Any, trace_span_count: int | None = None
+) -> list[dict[str, Any]]:
     """Preserve explicit coverage without treating legacy silence as success."""
     assessments = []
     for result in analysis.detection_results:
@@ -229,8 +231,33 @@ def _convert_assessments(analysis: Any) -> list[dict[str, Any]]:
             item["confidence_basis"] = basis
         if "response_contract_coverage" in metadata:
             coverage = validate_response_coverage(metadata["response_contract_coverage"])
-            if coverage is None:
+            consistent = coverage is not None
+            if coverage is not None:
+                violated = any(row["status"] == "violated" for row in coverage["records"])
+                expected_assessment = (
+                    "contract_violated"
+                    if violated
+                    else "contract_satisfied"
+                    if coverage["checked_count"]
+                    else "abstained"
+                )
+                consistent = (
+                    "error" not in metadata
+                    and trace_span_count is not None
+                    and coverage["trace_span_count"] == trace_span_count
+                    and type(checked) is int
+                    and checked == coverage["checked_count"]
+                    and metadata.get("assessment") == expected_assessment
+                    and result.detected == violated
+                )
+            if not consistent:
                 item["response_coverage_status"] = "invalid"
+                item.pop("checked_contracts", None)
+                item["assessment"] = (
+                    "error"
+                    if "error" in metadata
+                    else ("finding" if result.detected else "unknown")
+                )
             else:
                 item["response_coverage_status"] = "valid"
                 item["response_contract_coverage"] = coverage

@@ -6,9 +6,13 @@ import json
 
 import pytest
 from pisama_core.detection.detectors.communication import CommunicationDetector
+from pisama_core.detection.orchestrator import AnalysisResult
+from pisama_core.detection.result import DetectionResult
+from pisama_core.traces.enums import Platform
 from pisama_core.traces.models import Trace
 
 from pisama import analyze
+from pisama._analyze import _convert_assessments
 from pisama._coverage import validate_response_coverage
 
 
@@ -112,3 +116,31 @@ def test_real_paired_core_accounting_survives_projection():
         assert coverage["unsupported_count"] == 1
         assert coverage["business_semantics_assessed"] is False
         assert "PRIVATE_SYNTHETIC_MARKER" not in json.dumps(coverage)
+
+
+@pytest.mark.parametrize("variation", ["violated", "count", "empty", "trace_count", "detected"])
+def test_cross_metadata_contradictions_are_not_passes(variation):
+    coverage = valid()
+    metadata = {
+        "assessment": "contract_satisfied",
+        "checked_contracts": 1,
+        "response_contract_coverage": coverage,
+    }
+    detected = False
+    if variation == "violated":
+        coverage["records"][0]["status"] = "violated"
+    elif variation == "count":
+        metadata["checked_contracts"] = 99
+    elif variation == "empty":
+        coverage.update(records=[], trace_span_count=0, considered_count=0, checked_count=0)
+    elif variation == "detected":
+        detected = True
+    result = DetectionResult("communication", detected=detected, metadata=metadata)
+    output = _convert_assessments(
+        AnalysisResult(trace_id="synthetic", platform=Platform.GENERIC, detection_results=[result]),
+        trace_span_count=2 if variation == "trace_count" else 1,
+    )[0]
+    assert output["assessment"] == ("finding" if detected else "unknown")
+    assert output["response_coverage_status"] == "invalid"
+    assert "response_contract_coverage" not in output
+    assert "checked_contracts" not in output
