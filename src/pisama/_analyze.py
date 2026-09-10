@@ -10,6 +10,7 @@ from typing import Any, Optional, Sequence, Union
 
 from pisama_core.traces.models import Trace
 
+from pisama._coverage import validate_response_coverage
 from pisama._loader import load_trace
 
 
@@ -226,6 +227,13 @@ def _convert_assessments(analysis: Any) -> list[dict[str, Any]]:
         basis = metadata.get("confidence_basis")
         if isinstance(basis, str) and basis == "uncalibrated contract heuristic":
             item["confidence_basis"] = basis
+        if "response_contract_coverage" in metadata:
+            coverage = validate_response_coverage(metadata["response_contract_coverage"])
+            if coverage is None:
+                item["response_coverage_status"] = "invalid"
+            else:
+                item["response_coverage_status"] = "valid"
+                item["response_contract_coverage"] = coverage
         assessments.append(item)
     return assessments
 

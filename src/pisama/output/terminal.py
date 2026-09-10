@@ -88,6 +88,18 @@ def display_analysis_result(result: AnalyzeResult) -> None:
             "Assessment reporting incomplete: "
             "detector identities/counts are missing or inconsistent."
         )
+    for assessment in result.detector_assessments:
+        if assessment.get("response_coverage_status") == "invalid":
+            console.print(
+                "Response-contract accounting rejected: invalid metadata; coverage unknown."
+            )
+        coverage = assessment.get("response_contract_coverage")
+        if isinstance(coverage, dict):
+            console.print(
+                f"Response-contract scope: {coverage['checked_count']} checked; "
+                f"{coverage['unsupported_count']} unsupported; "
+                f"{coverage['outside_scope_count']} outside scope."
+            )
 
     if not result.issues:
         return
