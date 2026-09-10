@@ -82,6 +82,10 @@ result = post("/diagnose/why-failed", {
     "content": json.dumps(trace), "format": "otel", "include_fixes": False,
 }, token)
 del token
+execution = result.get("execution")
+if not isinstance(execution, dict):
+    execution = {}
+print("Detector execution:", execution.get("status", "unavailable"))
 print("Failure signals:", result.get("failure_count"))
 for finding in result.get("all_detections", []):
     print(json.dumps({name: finding.get(name) for name in (
@@ -91,7 +95,14 @@ for finding in result.get("all_detections", []):
 
 Ingestion accepts work asynchronously. The diagnosis request above analyzes the
 submitted content; it does not prove that background analysis of the stored run
-has completed. Review the reported agent, spans, evidence and next action against
+has completed. Execution metadata is not available on every deployment. Missing
+metadata means coverage is unavailable, not complete. `partial`, `failed`, or
+`unavailable` execution must not be interpreted as a clean diagnosis, even with
+zero findings. Keep any partial findings for review. A `complete` execution
+status describes reported detector operations, not universal detector coverage,
+calibration validity, or task success.
+
+Review the reported agent, spans, evidence and next action against
 your run. Zero signals is not proof of success, and a suggested fix is not proof
 that the task will work after a change. `include_fixes=False` avoids requesting
 optional generated fixes; it does not promise that every hosted detector is free
