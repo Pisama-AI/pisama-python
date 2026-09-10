@@ -79,8 +79,8 @@ def analyze_cmd(path: str, min_severity: int, output_json: bool, scrub: bool) ->
     else:
         display_analysis_result(result)
 
-    # Exit code: 1 if critical issues found, 0 otherwise
-    if result.critical_issues:
+    # Explicit detector errors fail independently of finding severity.
+    if result.critical_issues or result.has_detector_errors:
         sys.exit(1)
 
 

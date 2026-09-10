@@ -43,6 +43,7 @@ class SmokeTestResult:
     per_detector_stats: dict[str, DetectorStats] = field(default_factory=dict)
     critical_traces: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
+    detector_assessments: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dict for JSON serialization."""
@@ -52,6 +53,7 @@ class SmokeTestResult:
             "per_detector_stats": {k: v.to_dict() for k, v in self.per_detector_stats.items()},
             "critical_traces": self.critical_traces,
             "errors": self.errors,
+            "detector_assessments": self.detector_assessments,
         }
 
 
@@ -76,10 +78,16 @@ class SmokeRunner:
 
         for trace in traces:
             try:
-                analysis = await async_analyze(trace)
+                analysis = await async_analyze(trace, detectors=detectors)
             except Exception as exc:
                 result.errors.append(f"trace {trace.trace_id[:12]}: {exc}")
                 continue
+
+            result.detector_assessments.append(
+                {"trace_id": trace.trace_id, "assessments": analysis.detector_assessments}
+            )
+            if analysis.has_detector_errors:
+                result.errors.append(f"trace {trace.trace_id[:12]}: detector execution failed")
 
             # Filter by requested detectors if specified
             issues = analysis.issues

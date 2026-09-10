@@ -125,6 +125,19 @@ for issue in result.issues:
 
 ## CLI
 
+`AnalyzeResult.detector_assessments` and JSON CLI output preserve explicit
+detector coverage. `abstained` is not a passed check; older core versions that
+provide no assessment are marked `unknown`. Terminal output separates explicit
+contract passes, abstentions, errors and unspecified coverage. Detector execution
+counts are not counts of validated requirements. No findings is not proof of task
+success. Coverage metadata does not turn heuristic confidence into calibration.
+`check --json` schema 3 includes per-file assessments and coverage completeness.
+`passed` remains a severity-threshold gate, not complete validation; explicit
+detector errors fail even with `--fail-on never`. Unknown coverage and abstention
+are not detector errors but are never counted as checked-clean files. Replay
+comparisons do not label disappeared findings fixed: current assessment metadata
+lacks comparable contract/input provenance, even when a later check passes.
+
 ```bash
 pisama analyze trace.json          # Analyze a trace
 pisama watch python my_agent.py    # Watch a live agent (pip install "pisama[auto]")

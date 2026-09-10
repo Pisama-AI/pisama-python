@@ -120,5 +120,9 @@ async def _smoke_async(
         for err in result.errors[:5]:
             console.print(f"  [dim]{err}[/dim]")
 
-    if fail_on_regression and result.critical_traces:
+    console.print(
+        "Detector execution does not imply complete validation; "
+        "per-trace assessment coverage is available in --json."
+    )
+    if result.errors or (fail_on_regression and result.critical_traces):
         sys.exit(1)

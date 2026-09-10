@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Optional, Sequence, Union
 
 from pisama_core.traces.models import Trace
@@ -53,6 +53,22 @@ class AnalyzeResult:
     trace_id: str
     detectors_run: int
     execution_time_ms: float
+    detector_assessments: list[dict[str, Any]] = field(default_factory=list)
+
+    @property
+    def has_detector_errors(self) -> bool:
+        return any(item.get("assessment") == "error" for item in self.detector_assessments)
+
+    @property
+    def coverage_complete(self) -> bool:
+        return (
+            self.detectors_run > 0
+            and len(self.detector_assessments) == self.detectors_run
+            and all(
+                item.get("assessment") in {"contract_satisfied", "contract_violated", "finding"}
+                for item in self.detector_assessments
+            )
+        )
 
     @property
     def has_issues(self) -> bool:
@@ -159,7 +175,47 @@ async def async_analyze(
         trace_id=trace.trace_id,
         detectors_run=analysis.total_detectors_run,
         execution_time_ms=elapsed_ms,
+        detector_assessments=_convert_assessments(analysis),
     )
+
+
+def _convert_assessments(analysis: Any) -> list[dict[str, Any]]:
+    """Preserve explicit coverage without treating legacy silence as success."""
+    assessments = []
+    for result in analysis.detection_results:
+        metadata = result.metadata if isinstance(result.metadata, dict) else {}
+        assessment = metadata.get("assessment")
+        if "error" in metadata:
+            assessment = "error"
+        elif not isinstance(assessment, str) or assessment not in {
+            "abstained",
+            "contract_satisfied",
+            "contract_violated",
+        }:
+            assessment = "finding" if result.detected else "unknown"
+        elif result.detected and assessment != "contract_violated":
+            assessment = "finding"
+        elif not result.detected and assessment == "contract_violated":
+            assessment = "unknown"
+        checked = metadata.get("checked_contracts")
+        if assessment == "contract_satisfied" and (type(checked) is not int or checked < 1):
+            assessment = "unknown"
+        elif (
+            assessment == "abstained"
+            and checked is not None
+            and (type(checked) is not int or checked != 0)
+        ):
+            assessment = "unknown"
+        item = {"detector_name": result.detector_name, "assessment": assessment}
+        # Expose coverage provenance, not arbitrary metadata/error strings that
+        # could contain captured input or credentials.
+        if type(checked) is int and checked >= 0:
+            item["checked_contracts"] = checked
+        basis = metadata.get("confidence_basis")
+        if isinstance(basis, str) and basis == "uncalibrated contract heuristic":
+            item["confidence_basis"] = basis
+        assessments.append(item)
+    return assessments
 
 
 def _convert_issues(
