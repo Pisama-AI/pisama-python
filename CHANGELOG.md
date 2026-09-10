@@ -8,9 +8,10 @@ All notable changes to the `pisama` meta-package are documented here. The packag
 
 ### Changed
 
-- `check --json` uses schema 3: per-file detector assessments and coverage
-  completeness are included. `files_clean` requires explicit assessed coverage;
-  use `files_no_findings` for the old absence-of-findings count. `passed` means
+- `check --json` uses schema 3: per-file assessments and
+  `assessment_reporting_complete` describe identified detector reports, not
+  whole-trace coverage. `trace_coverage` stays unassessed and `files_clean` stays
+  zero. Use `files_no_findings` for absence-of-findings counts. `passed` means
   the severity gate passed with no detector errors, not complete task validation.
 - Explicit detector errors cause nonzero exits in analyze, check (including
   `--fail-on never`), replay, smoke and watch. Unknown coverage/abstention alone
@@ -22,6 +23,10 @@ All notable changes to the `pisama` meta-package are documented here. The packag
 - Terminal summaries distinguish findings from coverage. This release does not
   itself ship the pending core communication correction or establish calibrated
   confidence, representative accuracy, or successful customer outcomes.
+- Response-contract accounting, when supplied by core, is validated against
+  actual trace size, record counts and detector outcome. Contradictions are
+  rejected. Positional checked/unsupported/outside-scope records omit raw IDs
+  and arbitrary metadata; they never certify whole-task business semantics.
 
 ## [0.6.5] - 2026-09-10
 
