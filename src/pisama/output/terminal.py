@@ -75,11 +75,31 @@ def display_analysis_result(result: AnalyzeResult) -> None:
         0, result.detectors_run - len(result.detector_assessments)
     )
     console.print(
-        "Coverage: "
-        f"{counts.get('contract_satisfied', 0)} explicit contract passes; "
+        "Coverage: selected detector reports only; "
+        f"{counts.get('contract_satisfied', 0)} detectors report contract passes; "
         f"{counts.get('abstained', 0)} abstained; "
         f"{counts.get('error', 0)} errors; {unknown} unspecified."
     )
+    console.print(
+        "Whole-trace/span coverage is unassessed; partial contract checks are not full coverage."
+    )
+    if not result.assessment_reporting_complete:
+        console.print(
+            "Assessment reporting incomplete: "
+            "detector identities/counts are missing or inconsistent."
+        )
+    for assessment in result.detector_assessments:
+        if assessment.get("response_coverage_status") == "invalid":
+            console.print(
+                "Response-contract accounting rejected: invalid metadata; coverage unknown."
+            )
+        coverage = assessment.get("response_contract_coverage")
+        if isinstance(coverage, dict):
+            console.print(
+                f"Response-contract scope: {coverage['checked_count']} checked; "
+                f"{coverage['unsupported_count']} unsupported; "
+                f"{coverage['outside_scope_count']} outside scope."
+            )
 
     if not result.issues:
         return

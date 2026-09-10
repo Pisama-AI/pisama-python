@@ -108,9 +108,10 @@ class _CheckReport:
         self.issues_total += len(result.issues)
         self.issues_at_or_above_threshold += len(triggered)
         self.files_with_issues += int(result.has_issues)
-        self.files_clean += int(not result.has_issues and result.coverage_complete)
+        # No current core result proves whole-trace/span coverage. Keep the
+        # legacy aggregate conservatively zero rather than count partial passes.
         self.files_no_findings += int(not result.has_issues)
-        self.files_incomplete += int(not result.coverage_complete)
+        self.files_incomplete += 1
         self.analysis_errors += int(result.has_detector_errors)
         self.files_failed += int(failed_threshold)
         self.failed = self.failed or failed_threshold
@@ -122,8 +123,6 @@ class _CheckReport:
                     if result.has_detector_errors
                     else "issues"
                     if result.has_issues
-                    else "clean"
-                    if result.coverage_complete
                     else "unassessed"
                 ),
                 "failed": failed_threshold,
@@ -132,7 +131,8 @@ class _CheckReport:
                 "execution_time_ms": result.execution_time_ms,
                 "issues": [asdict(issue) for issue in result.issues],
                 "detector_assessments": result.detector_assessments,
-                "coverage_complete": result.coverage_complete,
+                "assessment_reporting_complete": result.assessment_reporting_complete,
+                "trace_coverage": "unassessed",
                 "error": None,
             }
         )
@@ -439,10 +439,7 @@ def _render_file_result(
     if result.has_issues:
         _print_file_report(trace_path, result, threshold)
     else:
-        console.print(
-            f"{trace_path.name}: no findings; "
-            f"coverage {'complete' if result.coverage_complete else 'incomplete/unspecified'}"
-        )
+        console.print(f"{trace_path.name}: no findings; whole-trace coverage unassessed")
 
 
 def _print_file_report(trace_path: Path, result: AnalyzeResult, threshold: int) -> None:

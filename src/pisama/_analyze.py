@@ -10,6 +10,7 @@ from typing import Any, Optional, Sequence, Union
 
 from pisama_core.traces.models import Trace
 
+from pisama._coverage import validate_response_coverage
 from pisama._loader import load_trace
 
 
@@ -60,12 +61,24 @@ class AnalyzeResult:
         return any(item.get("assessment") == "error" for item in self.detector_assessments)
 
     @property
-    def coverage_complete(self) -> bool:
+    def assessment_reporting_complete(self) -> bool:
+        """Each executed detector has one identified report, not complete trace coverage."""
+        names = [item.get("detector_name") for item in self.detector_assessments]
         return (
             self.detectors_run > 0
             and len(self.detector_assessments) == self.detectors_run
+            and all(isinstance(name, str) and bool(name) for name in names)
+            and len(set(names)) == self.detectors_run
             and all(
-                item.get("assessment") in {"contract_satisfied", "contract_violated", "finding"}
+                item.get("assessment")
+                in {
+                    "contract_satisfied",
+                    "contract_violated",
+                    "finding",
+                    "unknown",
+                    "abstained",
+                    "error",
+                }
                 for item in self.detector_assessments
             )
         )
@@ -175,11 +188,13 @@ async def async_analyze(
         trace_id=trace.trace_id,
         detectors_run=analysis.total_detectors_run,
         execution_time_ms=elapsed_ms,
-        detector_assessments=_convert_assessments(analysis),
+        detector_assessments=_convert_assessments(analysis, len(trace.spans)),
     )
 
 
-def _convert_assessments(analysis: Any) -> list[dict[str, Any]]:
+def _convert_assessments(
+    analysis: Any, trace_span_count: int | None = None
+) -> list[dict[str, Any]]:
     """Preserve explicit coverage without treating legacy silence as success."""
     assessments = []
     for result in analysis.detection_results:
@@ -214,6 +229,38 @@ def _convert_assessments(analysis: Any) -> list[dict[str, Any]]:
         basis = metadata.get("confidence_basis")
         if isinstance(basis, str) and basis == "uncalibrated contract heuristic":
             item["confidence_basis"] = basis
+        if "response_contract_coverage" in metadata:
+            coverage = validate_response_coverage(metadata["response_contract_coverage"])
+            consistent = coverage is not None
+            if coverage is not None:
+                violated = any(row["status"] == "violated" for row in coverage["records"])
+                expected_assessment = (
+                    "contract_violated"
+                    if violated
+                    else "contract_satisfied"
+                    if coverage["checked_count"]
+                    else "abstained"
+                )
+                consistent = (
+                    "error" not in metadata
+                    and trace_span_count is not None
+                    and coverage["trace_span_count"] == trace_span_count
+                    and type(checked) is int
+                    and checked == coverage["checked_count"]
+                    and metadata.get("assessment") == expected_assessment
+                    and result.detected == violated
+                )
+            if not consistent:
+                item["response_coverage_status"] = "invalid"
+                item.pop("checked_contracts", None)
+                item["assessment"] = (
+                    "error"
+                    if "error" in metadata
+                    else ("finding" if result.detected else "unknown")
+                )
+            else:
+                item["response_coverage_status"] = "valid"
+                item["response_contract_coverage"] = coverage
         assessments.append(item)
     return assessments
 

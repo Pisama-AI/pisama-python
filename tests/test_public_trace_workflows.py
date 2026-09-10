@@ -61,9 +61,7 @@ def test_captured_atif_loads_consistently_from_all_public_inputs(
     same_object = load_trace(expected)
 
     assert same_object is expected
-    assert {from_dict.trace_id, from_json.trace_id, from_file.trace_id} == {
-        expected.trace_id
-    }
+    assert {from_dict.trace_id, from_json.trace_id, from_file.trace_id} == {expected.trace_id}
     assert len(expected.spans) == 20
     assert len({span.span_id for span in expected.spans}) == 20
     assert sum(span.kind.value == "tool" for span in expected.spans) == 8
@@ -119,7 +117,25 @@ async def test_real_detector_pipeline_analyzes_captured_multi_agent_trace(
     assert result.execution_time_ms > 0
     assert result.has_issues
     assert result.critical_issues
-    assert {"context", "communication"}.issubset(issue_types)
+    assert "context" in issue_types
+    from pisama_core.detection.detectors.communication import CommunicationDetector
+
+    if CommunicationDetector.version.startswith("1."):
+        # Legacy core inferred intent failure from verb overlap. Preserve its
+        # compatibility expectation, not that inference as a correctness gate.
+        assert "communication" in issue_types
+    else:
+        assert "communication" not in issue_types
+        assessment = next(
+            item for item in result.detector_assessments if item["detector_name"] == "communication"
+        )
+        assert assessment["assessment"] == "abstained"
+        assert assessment["checked_contracts"] == 0
+        coverage = assessment.get("response_contract_coverage")
+        if coverage is not None:
+            assert coverage["checked_count"] == 0
+            assert coverage["unsupported_count"] == 6
+            assert coverage["outside_scope_count"] == 14
 
     context_only = analyze(captured_omnigent_trajectory, detectors=["context"])
     assert context_only.detectors_run == 1
