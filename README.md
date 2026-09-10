@@ -237,6 +237,19 @@ This used to require the standalone `pisama-agent-sdk` package. That package
 still works and stays fully supported for existing installs; `pisama[agents]`
 is the recommended path for new projects, one package instead of two.
 
+### Interpreting synchronous healing results
+
+When `pisama.agents.heal.heal_now` returns `applied=False` and `escalated=False`,
+remain observe-only. This does not necessarily mean "no suggestion." The response may
+retain `fix` and a derived `prompt_patch` for human inspection when calibration
+evidence is unavailable. Do not apply a suggestion just because it is present;
+neither flag asserts that it was escalated for approval.
+
+The current parser does not expose unknown response fields such as
+`application_blocked_reason`. It preserves recognized fields including
+`applied`, `escalated`, `message`, and `fix`. This compatibility is not a
+certification of autonomous safety if detector evidence is restored later.
+
 ## Detectors
 
 Core detectors, gated per platform (n8n, LangGraph, Dify, OpenClaw and others). A representative selection:
