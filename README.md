@@ -106,6 +106,11 @@ finding. Do not send the key or an unredacted trace by email.
 
 ## Usage
 
+Local `analyze()` accepts a nonempty Pisama native trace (`spans`), an ATIF
+trajectory, or native span JSONL. OTLP `resourceSpans` exports are not a local
+input format; use the hosted workflow above for those exports. Unsupported or
+empty inputs raise an error rather than reporting a clean analysis.
+
 ```python
 from pisama import analyze
 

@@ -12,6 +12,14 @@ from pisama._atif import is_atif_trajectory, trace_from_atif
 
 
 def load_trace(input_data: Union[str, dict[str, Any], Trace]) -> Trace:
+    """Load supported trace input, rejecting empty traces before detection."""
+    trace = _load_trace(input_data)
+    if not trace.spans:
+        raise ValueError("Trace contains no spans; no analysis was performed.")
+    return trace
+
+
+def _load_trace(input_data: Union[str, dict[str, Any], Trace]) -> Trace:
     """Load a Trace from various input formats.
 
     Args:
@@ -77,6 +85,15 @@ def _load_dict(data: dict[str, Any]) -> Trace:
     """Load either an ATIF trajectory or Pisama's native trace shape."""
     if is_atif_trajectory(data):
         return trace_from_atif(data)
+    if "resourceSpans" in data:
+        raise ValueError(
+            "OTLP resourceSpans is not supported by local analyze(); "
+            "use hosted ingestion or provide an ATIF/native trace."
+        )
+    if not isinstance(data.get("spans"), list):
+        raise ValueError("Expected an ATIF trajectory or a native trace with a spans list.")
+    if not all(isinstance(span, dict) for span in data["spans"]):
+        raise ValueError("Native trace spans must be objects.")
     return Trace.from_dict(data)
 
 
@@ -91,12 +108,15 @@ def _load_jsonl(text: str) -> Trace:
     # treat the file as a single-line trace dump.
     first = json.loads(lines[0])
     if "trace_id" in first and "spans" in first:
-        return Trace.from_dict(first)
+        return _load_dict(first)
 
     # Otherwise, treat each line as a span dict and wrap them.
     from pisama_core.traces.models import Span
 
-    spans = [Span.from_dict(json.loads(line)) for line in lines]
+    rows = [json.loads(line) for line in lines]
+    if not all(isinstance(row, dict) and row and "resourceSpans" not in row for row in rows):
+        raise ValueError("JSONL must contain nonempty native span objects, not OTLP exports.")
+    spans = [Span.from_dict(row) for row in rows]
     trace = Trace()
     for span in spans:
         trace.add_span(span)
