@@ -49,8 +49,15 @@ class HealingResult:
         verification, see D7) was returned and is ready to apply inline.
     `escalated`: no fix passed the inline gates; the top fix requires
         human approval.
-    Both false means no fix was available at all (e.g. unrecognised
-    detection type) — caller should fall back to its observe-only path.
+    Both false means inline application is not authorized; caller must
+        remain observe-only. A fix payload or derived prompt_patch may still
+        be present for human inspection, including when calibration evidence
+        is unavailable. Its presence is not permission to apply it.
+
+    Unknown response fields, such as application_blocked_reason, are not
+    exposed by this parser. Recognized flags, message, and fix are retained.
+    These result semantics do not certify autonomous safety if detector
+    evidence becomes available again.
 
     `verification_passed` is populated when the server ran inline
     verification (MEDIUM-tier fixes only): True iff the simulated apply
