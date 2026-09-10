@@ -53,8 +53,8 @@ def display_analysis_result(result: AnalyzeResult) -> None:
         if critical_count:
             header_text += f" ({critical_count} critical)"
     else:
-        header_style = "green bold"
-        header_text = "No issues detected"
+        header_style = "bold"
+        header_text = "No findings reported (not proof of task success)"
 
     console.print()
     console.print(
@@ -65,6 +65,20 @@ def display_analysis_result(result: AnalyzeResult) -> None:
             f"time={result.execution_time_ms:.0f}ms",
             border_style="dim",
         )
+    )
+
+    counts: dict[str, int] = {}
+    for assessment in result.detector_assessments:
+        status = assessment.get("assessment", "unknown")
+        counts[status] = counts.get(status, 0) + 1
+    unknown = counts.get("unknown", 0) + max(
+        0, result.detectors_run - len(result.detector_assessments)
+    )
+    console.print(
+        "Coverage: "
+        f"{counts.get('contract_satisfied', 0)} explicit contract passes; "
+        f"{counts.get('abstained', 0)} abstained; "
+        f"{counts.get('error', 0)} errors; {unknown} unspecified."
     )
 
     if not result.issues:

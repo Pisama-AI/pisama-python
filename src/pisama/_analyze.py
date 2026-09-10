@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Optional, Sequence, Union
 
 from pisama_core.traces.models import Trace
@@ -53,6 +53,7 @@ class AnalyzeResult:
     trace_id: str
     detectors_run: int
     execution_time_ms: float
+    detector_assessments: list[dict[str, Any]] = field(default_factory=list)
 
     @property
     def has_issues(self) -> bool:
@@ -159,7 +160,28 @@ async def async_analyze(
         trace_id=trace.trace_id,
         detectors_run=analysis.total_detectors_run,
         execution_time_ms=elapsed_ms,
+        detector_assessments=_convert_assessments(analysis),
     )
+
+
+def _convert_assessments(analysis: Any) -> list[dict[str, Any]]:
+    """Preserve explicit coverage without treating legacy silence as success."""
+    assessments = []
+    for result in analysis.detection_results:
+        metadata = result.metadata or {}
+        assessment = metadata.get("assessment")
+        if "error" in metadata:
+            assessment = "error"
+        elif assessment not in {"abstained", "contract_satisfied", "contract_violated"}:
+            assessment = "finding" if result.detected else "unknown"
+        item = {"detector_name": result.detector_name, "assessment": assessment}
+        # Expose coverage provenance, not arbitrary metadata/error strings that
+        # could contain captured input or credentials.
+        for key in ("checked_contracts", "confidence_basis"):
+            if key in metadata:
+                item[key] = metadata[key]
+        assessments.append(item)
+    return assessments
 
 
 def _convert_issues(
