@@ -44,7 +44,7 @@ dependencies = [
 # `pip install "pisama[mcp]"` resolves mcp 2.0.0 and `pisama mcp-server` dies at
 # server.py:138 with AttributeError: 'Server' object has no attribute
 # 'list_tools'. Lift this only once the server is ported to the 2.x API.
-mcp = ["mcp>=1.0.0,<2"]
+mcp = ["mcp>=1.0.0,<3"]
 # pisama.auto is now original code inside this package (see src/pisama/auto/),
 # not an import of the standalone pisama-auto distribution -- pisama-auto stays
 # published separately and, in a later release, becomes a thin shim re-exporting
