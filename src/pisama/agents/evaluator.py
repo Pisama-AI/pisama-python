@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional
 logger = logging.getLogger(__name__)
 
 try:
-    import httpx
+    from pisama._http import AsyncPlatformSession, PlatformSession  # needs httpx
     _HTTPX_AVAILABLE = True
 except ImportError:
     _HTTPX_AVAILABLE = False
@@ -70,14 +70,9 @@ class PisamaEvaluator:
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
-        self._client = httpx.Client(
-            base_url=self.base_url,
-            headers={
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-            },
-            timeout=timeout,
-        )
+        # /evaluate takes a JWT, not the raw key: the session exchanges the key
+        # via /auth/token and re-exchanges once if the JWT expires.
+        self._session = PlatformSession(self.base_url, api_key, timeout=timeout)
 
     def evaluate(
         self,
@@ -109,7 +104,7 @@ class PisamaEvaluator:
         if context_limit:
             payload["context_limit"] = context_limit
 
-        response = self._client.post("/api/v1/evaluate", json=payload)
+        response = self._session.request("POST", "/api/v1/evaluate", json=payload)
         response.raise_for_status()
         data = response.json()
 
@@ -153,15 +148,9 @@ class PisamaEvaluator:
         if context_limit:
             payload["context_limit"] = context_limit
 
-        async with httpx.AsyncClient(
-            base_url=self.base_url,
-            headers={
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-            },
-            timeout=self.timeout,
-        ) as client:
-            response = await client.post("/api/v1/evaluate", json=payload)
+        session = AsyncPlatformSession(self.base_url, self.api_key, timeout=self.timeout)
+        async with session:
+            response = await session.request("POST", "/api/v1/evaluate", json=payload)
             response.raise_for_status()
             data = response.json()
 
@@ -187,8 +176,8 @@ class PisamaEvaluator:
         )
 
     def close(self):
-        """Close the underlying HTTP client."""
-        self._client.close()
+        """Close the underlying HTTP session."""
+        self._session.close()
 
     def __enter__(self):
         return self

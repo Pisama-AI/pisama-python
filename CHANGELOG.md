@@ -4,6 +4,13 @@ All notable changes to the `pisama` meta-package are documented here. The packag
 
 ## [Unreleased]
 
+### Fixed
+
+- `PisamaEvaluator.evaluate()` and `evaluate_async()` sent the raw API key as
+  the bearer token, so every call to `/api/v1/evaluate` returned 401. They now
+  exchange the key for a JWT via `/api/v1/auth/token` and re-exchange once on
+  expiry, like the package's other platform clients.
+
 ## [0.7.0] - 2026-09-10
 
 ### Changed
